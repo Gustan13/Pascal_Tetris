@@ -121,7 +121,7 @@ var i : integer;
 begin
 	for i:=1 to 4 do
 		positions[player.block_positions[i, 1], player.block_positions[i, 2] + offset] := 1;
-	fpSystem('spd-say boop');
+	fpSystem('spd-say PvpvpvPuntskatats');
 end;
 
 procedure check_collision(var positions: matrix; var player : tetramino);
@@ -132,10 +132,11 @@ begin
 		x := player.block_positions[i, 1];
 		y := player.block_positions[i, 2];
 
-		if positions[x, y + 2] = 1 then
+		if positions[x, y] = 1 then
 		begin
-			insert_block(positions, player, 1);
-			spawn_tetramino(player, round(Random) mod 7);
+			insert_block(positions, player, -1);
+			spawn_tetramino(player, round(Random(7)));
+			break;
 		end;
 	end;
 end;
@@ -148,10 +149,10 @@ begin
 
 	for i:=1 to 4 do
 	begin
-		if player.block_positions[i, 2] >= HEIGHT - 2 then
+		if player.block_positions[i, 2] = HEIGHT then
 		begin
-			insert_block(positions, player, 2);
-			spawn_tetramino(player, round(Random) mod 7);
+			insert_block(positions, player, 0);
+			spawn_tetramino(player, round(Random(7)));
 			found := true;
 		end;
 	end;
@@ -161,30 +162,40 @@ begin
 			player.block_positions[i, 2] := player.block_positions[i, 2] + 1;
 end;
 
-function check_wall_left(var player : tetramino; var positions) : boolean;
-var i : integer;
+function check_wall_left(var player : tetramino; var positions : matrix) : boolean;
+var i, x, y : integer;
 begin
 	check_wall_left := true;
 	for i:=1 to 4 do
 	begin
+		x := player.block_positions[i, 1];
+		y := player.block_positions[i, 2];
+
 		if player.block_positions[i, 1] <= 1 then
+			check_wall_left := false;
+		if ((positions[x - 1, y] = 1) {or (positions[x - 1, y + 2] = 1)}) then
 			check_wall_left := false;
 	end;
 end;
 
-function check_wall_right(var player : tetramino; var positions) : boolean;
-var i : integer;
+function check_wall_right(var player : tetramino; var positions : matrix) : boolean;
+var i, x, y : integer;
 begin
 	check_wall_right := true;
 	for i:=1 to 4 do
 	begin
+		x := player.block_positions[i, 1];
+		y := player.block_positions[i, 2];
+
 		if player.block_positions[i, 1] >= WIDTH then
+			check_wall_right := false;
+		if ((positions[x + 1, y] = 1) {or (positions[x + 1, y + 2] = 1)}) then
 			check_wall_right := false;
 	end;
 end;
 
 procedure move_player(positions: matrix; var blocks: matrix; ch : char; var player : tetramino);
-var i, x, y : integer;
+var i, x : integer;
 begin
 
 	if (ch = 'a') and check_wall_left(player, positions) then
@@ -192,9 +203,7 @@ begin
 		for i:=1 to 4 do
 		begin
 			x := player.block_positions[i, 1];
-			y := player.block_positions[i, 2];
-			if (positions[x - 1, y] = 0) and (positions[x - 1, y +1] = 0) and (positions[x - 1, y + 2] = 0) then
-				player.block_positions[i, 1] := x - 1;
+			player.block_positions[i, 1] := x - 1;	
 		end;
 	end
 	else if (ch = 'd') and check_wall_right(player, positions) then
@@ -202,9 +211,7 @@ begin
 		for i:=1 to 4 do
 		begin
 			x := player.block_positions[i, 1];
-			y := player.block_positions[i, 2];
-			if (positions[x + 1, y] = 0) and (positions[x + 1, y + 1] = 0) and (positions[x + 1, y + 2] = 0) then
-				player.block_positions[i, 1] := x + 1;
+			player.block_positions[i, 1] := x + 1; 
 		end;
 	end;
 end;
@@ -213,9 +220,9 @@ procedure render_blocks(posits : matrix);
 var i, j : integer;
 begin
 
-	for i:=0 to HEIGHT do
+	for i:=1 to HEIGHT do
 	begin
-	for j:=0 to WIDTH do
+	for j:=1 to WIDTH do
 	begin
 		gotoxy(j, i);
 
@@ -226,11 +233,11 @@ begin
 	end;
 	end;
 
-	for i:=1 to WIDTH do
+	{for i:=1 to WIDTH do
 	begin
 		gotoxy(i, HEIGHT); 
 		write('T');
-	end;	
+	end;}	
 end;
 
 procedure render_player(player : tetramino);
@@ -246,44 +253,54 @@ end;
 procedure empty_matrix(var positions : matrix);
 var i, j : integer;
 begin
-	for i:=0 to HEIGHT do
+	for i:=1 to HEIGHT do
 	begin
-	for j:=0 to WIDTH do
+	for j:=1 to WIDTH do
 	begin
 		positions[j, i] := 0;
 	end;
 	end;
 end;
 
-function line_full(positions : matrix) : boolean;
-var i : integer;
+function line_full(positions : matrix; var line : integer) : boolean;
+var i, j, line_to_erase : integer; found : boolean;
 begin
-	line_full := true;
 
-	for i:=1 to WIDTH do
+	line_full := false;
+
+	for j:=1 to HEIGHT do
 	begin
-		if positions[i, 12] = 0 then
-			line_full := false;
+		found := true;
+		for i:=1 to WIDTH do
+		begin
+			if positions[i, j] = 0 then
+				found := false;
+		end;
+		if found = true then
+		begin
+			line_full := true;
+			line_to_erase := j;
+			line := line_to_erase;
+		end;
 	end;
 
 	if line_full = true then
 	begin
 		for i:=1 to WIDTH do
-			positions[i, 12] := 0;
+			positions[i, line_to_erase] := 0;
 
 		render_blocks(positions);
-		fpSystem('spd-say BOP');
+		fpSystem('spd-say TETRIS');
 		{fpSystem('notify-send "Line Complete"');}
-		delay(400);
 	end;
 end;
 
 procedure erase_line(var positions: matrix);
-var i, j : integer;
+var i, j, line_to_erase : integer;
 begin
-	if line_full(positions) then
+	if line_full(positions, line_to_erase) then
 	begin
-		j:=HEIGHT;
+		j:=line_to_erase;
 		while j > 1 do
 		begin
 			i:=WIDTH;
@@ -312,7 +329,7 @@ begin
 
 	ClrScr;
 	fpSystem('tput civis');
-	Window(1, 1, WIDTH, HEIGHT);
+	Window(1, 1, WIDTH + 1, HEIGHT + 1);
 	TextBackground(WHITE);
 	TextColor(BLACK);
 
@@ -325,18 +342,18 @@ begin
 
 	while ch <> #27 do
 	begin	
-		delay(10);
+		delay(1);
 		canPress := true;
 		
 		if KeyPressed and (canPress = true) then
 		begin
 			canPress := false;
 			ch := ReadKey;
-			check_collision(positions, current_block);
+			{check_collision(positions, current_block);}
 			move_player(positions, current_block.block_positions, ch, current_block);
 		end;	
 		
-		if timer = 20 then
+		if timer = 200 then
 		begin
 			player_fall(current_block, positions);
 			check_collision(positions, current_block);
@@ -349,8 +366,7 @@ begin
 		erase_line(positions);
 		render_blocks(positions);
 		render_player(current_block);
-		GotoXY(1, 12);
-		write('By Isoo');
+		GotoXY(1, HEIGHT);
 	end;
 
 	TextBackground(BLACK);
