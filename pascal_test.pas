@@ -17,6 +17,7 @@ positions : matrix;
 current_block : tetramino;
 
 {	TETRAMINO CREATION	}
+{	The creation of blocks consists in repositioning the four points of the tetramino structure	}
 
 procedure create_i_block(var player : tetramino);
 var i : integer;
@@ -101,6 +102,7 @@ begin
 	player.block_positions[4, 2] := 2;
 end;
 
+{	Chooses the block to be created	}
 procedure spawn_tetramino(var player : tetramino; piece_type : integer);
 begin
 	case (piece_type) of
@@ -412,19 +414,19 @@ begin
 		erase_line(positions);
 		render_blocks(positions);
 		render_player(current_block);
-		GotoXY(25, 2);
+		GotoXY(23, 2);
 		write('Score: ', score);
-		GotoXY(25, 6);
+		GotoXY(23, 6);
 		if paused then
 		begin
-			GotoXY(28, 10);
+			GotoXY(32, 10);
 			write('PAUSED');
 		end
 		else
 		begin
-			write('WASD to Move');
-			GotoXY(28, 10);
-			write('      ')
+			write('WASD to Move, P to Pause');
+			GotoXY(32, 10);
+			write('       ')
 		end;
 	end;
 
