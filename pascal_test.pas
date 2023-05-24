@@ -421,7 +421,7 @@ begin
 				spawn_tetramino(current_block, round(random(7)));
 				score := 0;
 				GotoXY(23, 2);
-				write('Score: ', score);
+				write('Score:       ', score);
 			end	
 			else if (ch = 'p') and (paused = false) then
 				paused := true
