@@ -11,7 +11,7 @@ type tetramino = record
 		end;
 
 var ch: char;
-timer, timerSet, score: integer;
+timer, timerSet, timerBuffer, score: integer;
 canPress, paused : boolean;
 positions : matrix;
 current_block : tetramino;
@@ -238,7 +238,15 @@ begin
 	else if not check_wall_left(player, positions) then rotate(player, -dir, positions);}
 end;
 
-procedure move_player(positions: matrix; var blocks: matrix; ch : char; var player : tetramino);
+procedure empty_matrix(var positions : matrix);
+var i, j : integer;
+begin
+	for i:=1 to HEIGHT do
+		for j:=1 to WIDTH do
+			positions[j, i] := 0;
+end;
+
+procedure move_player(var positions: matrix; var blocks: matrix; ch : char; var player : tetramino; var timerSet : integer);
 var i, x : integer;
 begin
 
@@ -261,10 +269,12 @@ begin
 	else if (ch = 'w') then
 		rotate(player, 1, positions)
 	else if (ch = 's') then
-		rotate(player, -1, positions);
+	begin
+		timerSet := 0;
+	end
 end;
 
-procedure render_player(player : tetramino; x, y : integer);
+procedure render_player(player : tetramino; x, y : integer; paused : boolean);
 var i : integer;
 begin
 	for i:=1 to 4 do
@@ -279,12 +289,19 @@ begin
 		else
 		begin
 			GotoXY(x * 2, y);
-			write('. ');
+			if (x >= 8) and (x <= 14) and (y >= 10) and (y <= 16) and paused then
+			begin
+				GotoXY(8, 10);
+				TextColor(RED);
+				write('PAUSED');
+			end
+			else
+				write('. ');
 		end;
 	end;
 end;
 
-procedure render_blocks(posits : matrix; player : tetramino);
+procedure render_blocks(posits : matrix; player : tetramino; paused : boolean);
 var i, j : integer;
 begin
 	for i:=1 to HEIGHT do
@@ -297,18 +314,11 @@ begin
 		if posits[j, i] = 1 then
 			write('[]')
 		else
-			render_player(player, j, i);
+			render_player(player, j, i, paused);
 	end;
 	end;
 end;
 
-procedure empty_matrix(var positions : matrix);
-var i, j : integer;
-begin
-	for i:=1 to HEIGHT do
-		for j:=1 to WIDTH do
-			positions[j, i] := 0;
-end;
 
 function line_full(positions : matrix; var line : integer; player : tetramino) : boolean;
 var i, j, line_to_erase : integer; found : boolean;
@@ -337,18 +347,19 @@ begin
 		score := score + 100;
 		for i:=1 to WIDTH do
 			positions[i, line_to_erase] := 0;
-
-		render_blocks(positions, player);
-		delay(150);
 	end;
 end;
 
-procedure erase_line(var positions: matrix; player : tetramino; var timerSet : integer);
+procedure erase_line(var positions: matrix; player : tetramino; var timerBuffer, timerSet : integer; paused : boolean);
 var i, j, line_to_erase : integer;
 begin
 	if line_full(positions, line_to_erase, player) then
 	begin
-		timerSet := timerSet - 5;
+		render_blocks(positions, player, paused);
+		if timerSet > 25 then
+		begin
+			timerBuffer := timerBuffer - 5;
+		end;
 		j:=line_to_erase;
 		while j > 1 do
 		begin
@@ -371,7 +382,7 @@ begin
 	spawn_tetramino(current_block, round(Random) mod 7);
 
 	timer := 0;
-	timerSet := 175;
+	timerBuffer := 100;
 	paused := false;
 
 	empty_matrix(positions);
@@ -398,21 +409,30 @@ begin
 		delay(1);
 		canPress := true;
 		
+		timerSet := timerBuffer;
+
 		if KeyPressed and (canPress = true) then
 		begin
 			canPress := false;
 			ch := ReadKey;
-
-			if (ch = 'p') and (paused = false) then
+			if (ch = 'r') then
+			begin
+				empty_matrix(positions);
+				spawn_tetramino(current_block, round(random(7)));
+				score := 0;
+				GotoXY(23, 2);
+				write('Score: ', score);
+			end	
+			else if (ch = 'p') and (paused = false) then
 				paused := true
 			else if (ch = 'p') and (paused = true) then
 				paused := false;
 
 			if not paused then
-				move_player(positions, current_block.block_positions, ch, current_block);
+				move_player(positions, current_block.block_positions, ch, current_block, timerSet);
 		end;
 		
-		if (timer = timerSet) and (not paused)  then
+		if (timer >= timerSet) and (not paused)  then
 		begin
 			player_fall(current_block, positions);
 			check_collision(positions, current_block);
@@ -421,23 +441,15 @@ begin
 		else if (not paused) then
 			timer := timer + 1;
 			
-		erase_line(positions, current_block, timerSet);
-		render_blocks(positions, current_block);
+		erase_line(positions, current_block, timerBuffer, timerSet, paused);
+		render_blocks(positions, current_block, paused);
 		TextColor(RED);
 		GotoXY(23, 2);
 		write('Score: ', score);
 		GotoXY(23, 6);
-		if paused then
-		begin
-			GotoXY(8, 10);
-			write('PAUSED');
-		end
-		else
-		begin
-			write('AD to Move and SW to Rotate');
-			GotoXY(23, 7);
-			write('Press P to Pause');
-		end;
+		write('AD to Move and SW to Rotate');
+		GotoXY(23, 7);
+		write('Press P to Pause');
 	end;
 
 	TextBackground(BLACK);
