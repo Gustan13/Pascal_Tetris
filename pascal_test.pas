@@ -1,9 +1,9 @@
 program test;
-uses Crt; 
+uses Crt, Unix; 
 
-const WIDTH = 10; HEIGHT = 12;
+const WIDTH = 10; HEIGHT = 20;
 
-type matrix = array[1..10, 1..12] of integer;
+type matrix = array[1..10, 1..20] of integer;
 
 type tetramino = record
 		piece_type, middle_x, middle_y : integer;
@@ -201,9 +201,24 @@ begin
 	end;
 end;
 
-procedure rotate(var player : tetramino; dir : integer);
+function occupied(var player : tetramino; positions : matrix) : boolean;
+var i, x, y : integer;
+begin
+	occupied := false;
+	for i:=2 to 4 do
+	begin
+		x := player.block_positions[i, 1];
+		y := player.block_positions[i, 2];
+
+		if (x < 1) or (x > WIDTH) or (positions[x, y] = 1) then
+			occupied := true;
+	end;
+end;
+
+procedure rotate(var player : tetramino; dir : integer; positions : matrix);
 var i, off_x, off_y, cal_x, cal_y : integer;
 begin
+
 	off_x := player.block_positions[1, 1];
 	off_y := player.block_positions[1, 2];
 
@@ -214,6 +229,11 @@ begin
 		player.block_positions[i, 1] := cal_x + off_x;
 		player.block_positions[i, 2] := cal_y + off_y;
 	end;
+
+	if occupied(player, positions) then rotate(player, -dir, positions);	
+
+	{if not check_wall_right(player, positions) then rotate(player, -dir, positions)
+	else if not check_wall_left(player, positions) then rotate(player, -dir, positions);}
 end;
 
 procedure move_player(positions: matrix; var blocks: matrix; ch : char; var player : tetramino);
@@ -237,9 +257,9 @@ begin
 		end;
 	end
 	else if (ch = 'w') then
-		rotate(player, 1)
+		rotate(player, 1, positions)
 	else if (ch = 's') then
-		rotate(player, -1);
+		rotate(player, -1, positions);
 end;
 
 procedure render_blocks(posits : matrix);
@@ -350,7 +370,7 @@ begin
 	canPress := true;
 
 	ClrScr;
-	{	fpSystem('tput civis');}
+	fpSystem('tput civis');
 	cursoroff;
 	Window(1, 1, WIDTH * 2 + 1, HEIGHT + 1);
 	TextBackground(WHITE);
@@ -369,7 +389,7 @@ begin
 
 	while ch <> #27 do
 	begin	
-		delay(50);
+		delay(1);
 		canPress := true;
 		
 		if KeyPressed and (canPress = true) then
@@ -378,9 +398,9 @@ begin
 			ch := ReadKey;
 			{check_collision(positions, current_block);}
 			move_player(positions, current_block.block_positions, ch, current_block);
-		end;	
+		end;
 		
-		if timer = 3 then
+		if timer = 200 then
 		begin
 			player_fall(current_block, positions);
 			check_collision(positions, current_block);
@@ -398,6 +418,6 @@ begin
 	TextBackground(BLACK);
 	TextColor(WHITE);
 	ClrScr;
-	{fpSystem('tput cnorm');}
+	fpSystem('tput cnorm');
 	cursoron;
 end.
