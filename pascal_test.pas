@@ -1,5 +1,5 @@
 program test;
-uses Crt, Unix; 
+uses Crt; 
 
 const WIDTH = 10; HEIGHT = 12;
 
@@ -121,7 +121,7 @@ var i : integer;
 begin
 	for i:=1 to 4 do
 		positions[player.block_positions[i, 1], player.block_positions[i, 2] + offset] := 1;
-	fpSystem('spd-say PvpvpvPuntskatats');
+	{	fpSystem('spd-say PvpvpvPuntskatats');}
 end;
 
 procedure check_collision(var positions: matrix; var player : tetramino);
@@ -194,6 +194,21 @@ begin
 	end;
 end;
 
+procedure rotate(var player : tetramino; dir : integer);
+var i, off_x, off_y, cal_x, cal_y : integer;
+begin
+	off_x := player.block_positions[1, 1];
+	off_y := player.block_positions[1, 2];
+
+	for i:=2 to 4 do
+	begin
+		cal_x :=  -(player.block_positions[i, 2] - off_y) * round(Sin(dir * Pi/2));
+		cal_y := (player.block_positions[i, 1] - off_x) * round(Sin(dir *Pi/2));
+		player.block_positions[i, 1] := cal_x + off_x;
+		player.block_positions[i, 2] := cal_y + off_y;
+	end;
+end;
+
 procedure move_player(positions: matrix; var blocks: matrix; ch : char; var player : tetramino);
 var i, x : integer;
 begin
@@ -213,7 +228,11 @@ begin
 			x := player.block_positions[i, 1];
 			player.block_positions[i, 1] := x + 1; 
 		end;
-	end;
+	end
+	else if (ch = 'w') then
+		rotate(player, 1)
+	else if (ch = 's') then
+		rotate(player, -1);
 end;
 
 procedure render_blocks(posits : matrix);
@@ -227,7 +246,7 @@ begin
 		gotoxy(j, i);
 
 		if posits[j, i] = 1 then
-			write('#')
+			write('0')
 		else
 			write('.');
 	end;
@@ -246,7 +265,7 @@ begin
 	for i:=1 to 4 do
 	begin
 		GotoXY(player.block_positions[i,1], player.block_positions[i,2]);
-		write('#');
+		write('0');
 	end;
 end;
 
@@ -254,12 +273,8 @@ procedure empty_matrix(var positions : matrix);
 var i, j : integer;
 begin
 	for i:=1 to HEIGHT do
-	begin
-	for j:=1 to WIDTH do
-	begin
-		positions[j, i] := 0;
-	end;
-	end;
+		for j:=1 to WIDTH do
+			positions[j, i] := 0;
 end;
 
 function line_full(positions : matrix; var line : integer) : boolean;
@@ -290,7 +305,7 @@ begin
 			positions[i, line_to_erase] := 0;
 
 		render_blocks(positions);
-		fpSystem('spd-say TETRIS');
+		{		fpSystem('spd-say TETRIS');}
 		{fpSystem('notify-send "Line Complete"');}
 	end;
 end;
@@ -328,8 +343,9 @@ begin
 	canPress := true;
 
 	ClrScr;
-	fpSystem('tput civis');
-	Window(1, 1, WIDTH + 1, HEIGHT + 1);
+	{	fpSystem('tput civis');}
+	cursoroff;
+	Window(1 + 20, 10, WIDTH + 21, HEIGHT + 11);
 	TextBackground(WHITE);
 	TextColor(BLACK);
 
@@ -342,7 +358,7 @@ begin
 
 	while ch <> #27 do
 	begin	
-		delay(1);
+		delay(10);
 		canPress := true;
 		
 		if KeyPressed and (canPress = true) then
@@ -353,7 +369,7 @@ begin
 			move_player(positions, current_block.block_positions, ch, current_block);
 		end;	
 		
-		if timer = 200 then
+		if timer = 2 then
 		begin
 			player_fall(current_block, positions);
 			check_collision(positions, current_block);
@@ -362,7 +378,6 @@ begin
 		else
 			timer := timer + 1;
 			
-		clrscr;
 		erase_line(positions);
 		render_blocks(positions);
 		render_player(current_block);
@@ -372,5 +387,6 @@ begin
 	TextBackground(BLACK);
 	TextColor(WHITE);
 	ClrScr;
-	fpSystem('tput cnorm');
+	{fpSystem('tput cnorm');}
+	cursoron;
 end.
