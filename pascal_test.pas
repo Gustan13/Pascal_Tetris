@@ -27,6 +27,7 @@ begin
 	player.block_positions[4, 1] := 7;
 	for i:=1 to 4 do
 		player.block_positions[i, 2] := 1;
+	TextColor(RED);	
 end;
 
 procedure create_t_block(var player : tetramino);
@@ -39,6 +40,7 @@ begin
 	player.block_positions[3, 2] := 1;
 	player.block_positions[4, 1] := 5;
 	player.block_positions[4, 2] := 2;
+	TextColor(BLACK);
 end;
 
 procedure create_l_block(var player : tetramino);
@@ -51,6 +53,7 @@ begin
 	player.block_positions[3, 2] := 1;
 	player.block_positions[4, 1] := 6;
 	player.block_positions[4, 2] := 2;
+	TextColor(BLUE);
 end;
 
 procedure create_j_block(var player : tetramino);
@@ -63,6 +66,7 @@ begin
 	player.block_positions[3, 2] := 1;
 	player.block_positions[4, 1] := 4;
 	player.block_positions[4, 2] := 2;
+	TextColor(GREEN);
 end;
 
 procedure create_o_block(var player : tetramino);
@@ -75,6 +79,7 @@ begin
 	player.block_positions[3, 2] := 2;
 	player.block_positions[4, 1] := 5;
 	player.block_positions[4, 2] := 2;
+	TextColor(MAGENTA);
 end;
 
 procedure create_s_block(var player : tetramino);
@@ -87,6 +92,7 @@ begin
 	player.block_positions[3, 2] := 2;
 	player.block_positions[4, 1] := 4;
 	player.block_positions[4, 2] := 2;
+	TextColor(CYAN);
 end;
 
 procedure create_z_block(var player : tetramino);
@@ -99,6 +105,7 @@ begin
 	player.block_positions[3, 2] := 2;
 	player.block_positions[4, 1] := 6;
 	player.block_positions[4, 2] := 2;
+	TextColor(BROWN);
 end;
 
 procedure spawn_tetramino(var player : tetramino; piece_type : integer);
@@ -243,12 +250,12 @@ begin
 	begin
 	for j:=1 to WIDTH do
 	begin
-		gotoxy(j, i);
+		gotoxy(j * 2, i);
 
 		if posits[j, i] = 1 then
-			write('0')
+			write('[]')
 		else
-			write('.');
+			write('. ');
 	end;
 	end;
 
@@ -264,8 +271,8 @@ var i : integer;
 begin
 	for i:=1 to 4 do
 	begin
-		GotoXY(player.block_positions[i,1], player.block_positions[i,2]);
-		write('0');
+		GotoXY(player.block_positions[i,1] * 2, player.block_positions[i,2]);
+		write('[]');
 	end;
 end;
 
@@ -345,20 +352,24 @@ begin
 	ClrScr;
 	{	fpSystem('tput civis');}
 	cursoroff;
-	Window(1 + 20, 10, WIDTH + 21, HEIGHT + 11);
+	Window(1, 1, WIDTH * 2 + 1, HEIGHT + 1);
 	TextBackground(WHITE);
 	TextColor(BLACK);
 
-	writeln('Welcome!');
+	HighVideo;
+
+	writeln('TETRIS');
 
 	repeat
 	until KeyPressed;
+
+	ClrScr;
 
 	ch := ' ';
 
 	while ch <> #27 do
 	begin	
-		delay(10);
+		delay(50);
 		canPress := true;
 		
 		if KeyPressed and (canPress = true) then
@@ -369,7 +380,7 @@ begin
 			move_player(positions, current_block.block_positions, ch, current_block);
 		end;	
 		
-		if timer = 2 then
+		if timer = 3 then
 		begin
 			player_fall(current_block, positions);
 			check_collision(positions, current_block);
