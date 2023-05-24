@@ -1,9 +1,9 @@
 program test;
-uses Crt, Unix; 
+uses Crt, Unix;
 
-const WIDTH = 10; HEIGHT = 20;
+const WIDTH = 10; HEIGHT = 21;
 
-type matrix = array[1..10, 1..20] of integer;
+type matrix = array[1..10, 1..21] of integer;
 
 type tetramino = record
 		piece_type, middle_x, middle_y : integer;
@@ -12,7 +12,7 @@ type tetramino = record
 
 var ch: char;
 timer, score: integer;
-canPress : boolean;
+canPress, paused : boolean;
 positions : matrix;
 current_block : tetramino;
 
@@ -27,7 +27,6 @@ begin
 	player.block_positions[4, 1] := 7;
 	for i:=1 to 4 do
 		player.block_positions[i, 2] := 1;
-	TextColor(RED);	
 end;
 
 procedure create_t_block(var player : tetramino);
@@ -40,7 +39,6 @@ begin
 	player.block_positions[3, 2] := 1;
 	player.block_positions[4, 1] := 5;
 	player.block_positions[4, 2] := 2;
-	TextColor(BLACK);
 end;
 
 procedure create_l_block(var player : tetramino);
@@ -53,7 +51,6 @@ begin
 	player.block_positions[3, 2] := 1;
 	player.block_positions[4, 1] := 6;
 	player.block_positions[4, 2] := 2;
-	TextColor(BLUE);
 end;
 
 procedure create_j_block(var player : tetramino);
@@ -66,7 +63,6 @@ begin
 	player.block_positions[3, 2] := 1;
 	player.block_positions[4, 1] := 4;
 	player.block_positions[4, 2] := 2;
-	TextColor(GREEN);
 end;
 
 procedure create_o_block(var player : tetramino);
@@ -79,7 +75,6 @@ begin
 	player.block_positions[3, 2] := 2;
 	player.block_positions[4, 1] := 5;
 	player.block_positions[4, 2] := 2;
-	TextColor(MAGENTA);
 end;
 
 procedure create_s_block(var player : tetramino);
@@ -92,7 +87,6 @@ begin
 	player.block_positions[3, 2] := 2;
 	player.block_positions[4, 1] := 4;
 	player.block_positions[4, 2] := 2;
-	TextColor(CYAN);
 end;
 
 procedure create_z_block(var player : tetramino);
@@ -105,7 +99,6 @@ begin
 	player.block_positions[3, 2] := 2;
 	player.block_positions[4, 1] := 6;
 	player.block_positions[4, 2] := 2;
-	TextColor(BROWN);
 end;
 
 procedure spawn_tetramino(var player : tetramino; piece_type : integer);
@@ -265,7 +258,7 @@ end;
 procedure render_blocks(posits : matrix);
 var i, j : integer;
 begin
-
+	TextColor(BLACK);
 	for i:=1 to HEIGHT do
 	begin
 	for j:=1 to WIDTH do
@@ -289,6 +282,7 @@ end;
 procedure render_player(player : tetramino);
 var i : integer;
 begin
+	TextColor(Red);
 	for i:=1 to 4 do
 	begin
 		GotoXY(player.block_positions[i,1] * 2, player.block_positions[i,2]);
@@ -365,6 +359,7 @@ begin
 	spawn_tetramino(current_block, round(Random) mod 7);
 
 	timer := 0;
+	paused := false;
 
 	empty_matrix(positions);
 
@@ -387,7 +382,7 @@ begin
 	ch := ' ';
 
 	while ch <> #27 do
-	begin	
+	begin
 		delay(1);
 		canPress := true;
 		
@@ -395,24 +390,42 @@ begin
 		begin
 			canPress := false;
 			ch := ReadKey;
-			{check_collision(positions, current_block);}
-			move_player(positions, current_block.block_positions, ch, current_block);
+
+			if (ch = 'p') and (paused = false) then
+				paused := true
+			else if (ch = 'p') and (paused = true) then
+				paused := false;
+
+			if not paused then
+				move_player(positions, current_block.block_positions, ch, current_block);
 		end;
 		
-		if timer = 200 then
+		if (timer = 200) and (not paused)  then
 		begin
 			player_fall(current_block, positions);
 			check_collision(positions, current_block);
 			timer := 0;
 		end
-		else
+		else if (not paused) then
 			timer := timer + 1;
 			
 		erase_line(positions);
 		render_blocks(positions);
 		render_player(current_block);
-		GotoXY(22, 2);
+		GotoXY(25, 2);
 		write('Score: ', score);
+		GotoXY(25, 6);
+		if paused then
+		begin
+			GotoXY(28, 10);
+			write('PAUSED');
+		end
+		else
+		begin
+			write('WASD to Move');
+			GotoXY(28, 10);
+			write('      ')
+		end;
 	end;
 
 	TextBackground(BLACK);
