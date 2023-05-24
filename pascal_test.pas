@@ -11,7 +11,7 @@ type tetramino = record
 		end;
 
 var ch: char;
-timer: integer;
+timer, score: integer;
 canPress : boolean;
 positions : matrix;
 current_block : tetramino;
@@ -328,6 +328,7 @@ begin
 
 	if line_full = true then
 	begin
+		score := score + 100;
 		for i:=1 to WIDTH do
 			positions[i, line_to_erase] := 0;
 
@@ -372,13 +373,11 @@ begin
 	ClrScr;
 	fpSystem('tput civis');
 	cursoroff;
-	Window(1, 1, WIDTH * 2 + 1, HEIGHT + 1);
+	Window(1, 1, WIDTH * 2 + 30, HEIGHT + 1);
 	TextBackground(WHITE);
-	TextColor(BLACK);
+	TextColor(BLUE);
 
-	HighVideo;
-
-	writeln('TETRIS');
+	writeln('ТЕТРИС');
 
 	repeat
 	until KeyPressed;
@@ -412,7 +411,8 @@ begin
 		erase_line(positions);
 		render_blocks(positions);
 		render_player(current_block);
-		GotoXY(1, HEIGHT);
+		GotoXY(22, 2);
+		write('Score: ', score);
 	end;
 
 	TextBackground(BLACK);
