@@ -125,12 +125,124 @@ end;
 
 {	END OF TETRAMINO CREATION	}
 
+procedure erase_player(player : tetramino);
+var i, x, y : integer;
+begin
+	
+	for i:=1 to 4 do
+	begin
+		x := player.block_positions[i, 1];
+		y := player.block_positions[i, 2];
+		GotoXY(x * 2, y);
+		TextColor(WHITE);
+		write('. ');
+	end;
+
+end;
+
+procedure render_player(player : tetramino);
+var i, x, y : integer;
+begin
+	
+	for i:=1 to 4 do
+	begin
+		x := player.block_positions[i, 1];
+		y := player.block_positions[i, 2];
+		GotoXY(x * 2, y);
+		TextColor(player.color);
+		write('[]');
+	end;
+
+end;
+
+procedure render_scene(posits : matrix);
+var i, j : integer;
+begin
+	for i:=1 to HEIGHT do
+	begin
+	for j:=1 to WIDTH do
+	begin
+		gotoxy(j * 2, i);
+		TextColor(WHITE);
+
+		if posits[j, i] = 1 then
+			write('[]')
+		else
+			{render_player(player, j, i, paused);}
+			write('. ');
+	end;
+	end;
+end;
+
+function line_full(positions : matrix; var line : integer; player : tetramino) : boolean;
+var i, j, min, max, line_to_erase : integer; found : boolean;
+begin
+
+	line_full := false;
+
+	min := player.block_positions[1,2] - 3;
+	max := min + 6;
+
+	if min < 0 then
+		min := 0
+	else if max > HEIGHT then
+		max := HEIGHT;
+
+	for j:=min to max do
+	begin
+		found := true;
+		for i:=1 to WIDTH do
+		begin
+			if positions[i, j] = 0 then
+			begin
+				found := false;
+			end;
+		end;
+		if found = true then
+		begin
+			line_full := true;
+			line_to_erase := j;
+			line := line_to_erase;
+		end;
+	end;
+
+	if line_full = true then
+	begin
+		score := score + 100;
+		for i:=1 to WIDTH do
+			positions[i, line_to_erase] := 0;
+	end;
+end;
+
+procedure erase_line(var positions: matrix; player : tetramino);
+var i, j, line_to_erase : integer;
+begin
+	if line_full(positions, line_to_erase, player) then
+	begin
+		if timerSet > 25 then
+			timerBuffer := timerBuffer - 5;
+		j:=line_to_erase;
+		while j > 1 do
+		begin
+			i:=WIDTH;
+			while i > 0 do
+			begin
+				positions[i, j] := positions[i, j - 1];
+				i := i - 1;
+			end;
+			j := j - 1;
+		end;
+		erase_line(positions, player);
+	end;
+	render_scene(positions);
+end;
+
 procedure insert_block(var positions : matrix; player : tetramino; offset : integer);
 var i : integer;
 begin
 	for i:=1 to 4 do
 		positions[player.block_positions[i, 1], player.block_positions[i, 2] + offset] := 1;
-	{	fpSystem('spd-say PvpvpvPuntskatats');}
+	erase_line(positions, player);
 end;
 
 procedure check_collision(var positions: matrix; var player : tetramino);
@@ -156,6 +268,8 @@ begin
 
 	found := false;
 
+	erase_player(player);
+
 	for i:=1 to 4 do
 	begin
 		if player.block_positions[i, 2] = HEIGHT then
@@ -167,8 +281,12 @@ begin
 	end;
 
 	if found = false then
+	begin
 		for i:=1 to 4 do
 			player.block_positions[i, 2] := player.block_positions[i, 2] + 1;
+	end;
+
+	render_player(player);
 end;
 
 function check_wall_left(var player : tetramino; var positions : matrix) : boolean;
@@ -233,9 +351,6 @@ begin
 	end;
 
 	if occupied(player, positions) then rotate(player, -dir, positions);	
-
-	{if not check_wall_right(player, positions) then rotate(player, -dir, positions)
-	else if not check_wall_left(player, positions) then rotate(player, -dir, positions);}
 end;
 
 procedure empty_matrix(var positions : matrix);
@@ -252,126 +367,34 @@ begin
 
 	if (ch = 'a') and check_wall_left(player, positions) then
 	begin
+		erase_player(player);
 		for i:=1 to 4 do
 		begin
 			x := player.block_positions[i, 1];
 			player.block_positions[i, 1] := x - 1;	
 		end;
+		render_player(player);
 	end
 	else if (ch = 'd') and check_wall_right(player, positions) then
 	begin
+		erase_player(player);
 		for i:=1 to 4 do
 		begin
 			x := player.block_positions[i, 1];
 			player.block_positions[i, 1] := x + 1; 
 		end;
+		render_player(player);
 	end
 	else if (ch = 'w') then
-		rotate(player, 1, positions)
+	begin
+		erase_player(current_block);
+		rotate(player, 1, positions);
+		render_player(current_block);
+	end
 	else if (ch = 's') then
 	begin
 		timerSet := 0;
 	end
-end;
-
-procedure render_player(player : tetramino; x, y : integer; paused : boolean);
-var i : integer;
-begin
-	for i:=1 to 4 do
-	begin
-		if (player.block_positions[i, 1] = x) and (player.block_positions[i, 2] = y) then
-		begin
-			TextColor(player.color);
-			GotoXY(player.block_positions[i,1] * 2, player.block_positions[i,2]);
-			write('[]');
-			break;
-		end
-		else
-		begin
-			GotoXY(x * 2, y);
-			if (x >= 8) and (x <= 14) and (y >= 10) and (y <= 16) and paused then
-			begin
-				GotoXY(8, 10);
-				TextColor(RED);
-				write('PAUSED');
-			end
-			else
-				write('. ');
-		end;
-	end;
-end;
-
-procedure render_blocks(posits : matrix; player : tetramino; paused : boolean);
-var i, j : integer;
-begin
-	for i:=1 to HEIGHT do
-	begin
-	for j:=1 to WIDTH do
-	begin
-		gotoxy(j * 2, i);
-		TextColor(WHITE);
-
-		if posits[j, i] = 1 then
-			write('[]')
-		else
-			render_player(player, j, i, paused);
-	end;
-	end;
-end;
-
-
-function line_full(positions : matrix; var line : integer; player : tetramino) : boolean;
-var i, j, line_to_erase : integer; found : boolean;
-begin
-
-	line_full := false;
-
-	for j:=1 to HEIGHT do
-	begin
-		found := true;
-		for i:=1 to WIDTH do
-		begin
-			if positions[i, j] = 0 then
-				found := false;
-		end;
-		if found = true then
-		begin
-			line_full := true;
-			line_to_erase := j;
-			line := line_to_erase;
-		end;
-	end;
-
-	if line_full = true then
-	begin
-		score := score + 100;
-		for i:=1 to WIDTH do
-			positions[i, line_to_erase] := 0;
-	end;
-end;
-
-procedure erase_line(var positions: matrix; player : tetramino; var timerBuffer, timerSet : integer; paused : boolean);
-var i, j, line_to_erase : integer;
-begin
-	if line_full(positions, line_to_erase, player) then
-	begin
-		render_blocks(positions, player, paused);
-		if timerSet > 25 then
-		begin
-			timerBuffer := timerBuffer - 5;
-		end;
-		j:=line_to_erase;
-		while j > 1 do
-		begin
-			i:=WIDTH;
-			while i > 0 do
-			begin
-				positions[i, j] := positions[i, j - 1];
-				i := i - 1;
-			end;
-			j := j - 1;
-		end;
-	end;
 end;
 
 { MAIN FUNCTION }
@@ -379,10 +402,12 @@ end;
 begin
 	Randomize;
 
+	fpSystem('resize -s 30 50');
+
 	spawn_tetramino(current_block, round(Random) mod 7);
 
 	timer := 0;
-	timerBuffer := 100;
+	timerBuffer := 200;
 	paused := false;
 
 	empty_matrix(positions);
@@ -404,6 +429,8 @@ begin
 
 	ch := ' ';
 
+	render_scene(positions);
+
 	while ch <> #27 do
 	begin
 		delay(1);
@@ -421,12 +448,27 @@ begin
 				spawn_tetramino(current_block, round(random(7)));
 				score := 0;
 				GotoXY(23, 2);
-				write('Score:       ', score);
+				write('Score:       ');
+				erase_player(current_block);
+				render_scene(positions);
+				render_player(current_block);
+				timerBuffer := 200;
 			end	
 			else if (ch = 'p') and (paused = false) then
-				paused := true
+			begin
+				paused := true;
+				GotoXY(7, 10);
+				TextColor(RED);
+				write('PAUSED');
+			end
 			else if (ch = 'p') and (paused = true) then
+			begin
 				paused := false;
+				GotoXY(7, 10);
+				TextColor(WHITE);
+				render_scene(positions);
+				render_player(current_block);
+			end;
 
 			if not paused then
 				move_player(positions, current_block.block_positions, ch, current_block, timerSet);
@@ -437,17 +479,16 @@ begin
 			player_fall(current_block, positions);
 			check_collision(positions, current_block);
 			timer := 0;
+			{timerBuffer := 200;}
 		end
 		else if (not paused) then
 			timer := timer + 1;
-			
-		erase_line(positions, current_block, timerBuffer, timerSet, paused);
-		render_blocks(positions, current_block, paused);
+
 		TextColor(RED);
 		GotoXY(23, 2);
 		write('Score: ', score);
 		GotoXY(23, 6);
-		write('AD to Move and SW to Rotate');
+		write('AD to Move. W to Rotate');
 		GotoXY(23, 7);
 		write('Press P to Pause');
 	end;
